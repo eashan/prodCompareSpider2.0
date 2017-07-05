@@ -32,43 +32,48 @@ class PricesPipeline(object):
         print('Product info of {} scrapped'.format(item['name']))
 
         self.session = Session()
-        specs = ""
-        for i in item['specs']:
-            specs+=item['specs'][i]
-            specs+ "\n"
-            if(self.session.query(Product).filter(Product.id==item['name']).count()):
-                product = self.session.query(Product).filter(Product.id==item['url']).first()
-                product.product_name = item['name']
-                # product.product_category = item['category']
-                product.product_specs = specs
-                product.product_url = item['url']
-            else:
-                product = Product(id=item['name'],product_name=item['name'], product_specs=specs, product_url=item['url'])
-
-        for i in item['stores']:
-            storeData = item['stores'][i]
-
-            if(self.session.query(Store).filter(Store.id==storeData['url']).count()):
-                store = self.session.query(Store).filter(Store.id==storeData['url']).first()
-                store.id = storeData['url']
-                store.store_price = float(storeData['price'].replace(',',''))
-                store.product_shipping = storeData['shipping']
-                store.product_delivery = storeData['delivery']
-                store.product_cod = storeData['cod']
-                store.product_emi = storeData['emi']
-            else:
-                store = Store(id=storeData['url'],store_price=float(storeData['price'].replace(',','')),product_shipping=storeData['shipping'],product_delivery=storeData['delivery'],product_cod = storeData['cod'],product_emi = storeData['emi'])
-
-            productStore = ProductStore()
-            productStore.store = store
-            productStore.product = product
-            # product.stores.append(productStore)
-
-            self.session.add(store)
-            self.session.add(productStore)
-
+        specs = '\n'.join([key + ":" + value for key, value in item['specs'].items()])
+        if(self.session.query(Product).filter(Product.product_url==item['url']).count()):
+            product = self.session.query(Product).filter(Product.product_url==item['url']).first()
+            product.product_name = item['name']
+            product.product_specs = specs
+            product.product_url = item['url']
+        else:
+            product = Product(product_name=item['name'], product_specs=specs, product_url=item['url'])
         self.session.add(product)
         self.session.commit()
+
+        for store_str, storeData in item['stores'].items():
+            if self.session.query(Store.id).filter_by(name=store_str).scalar():
+                store = self.session.query(Store).filter(Store.name==store_str).first()
+            else:
+                store = Store(name=store_str)
+                self.session.add(store)
+                self.session.commit()
+
+            if self.session.query(ProductStore).filter(ProductStore.product_id==product.id,
+                                                       ProductStore.store_id==store.id).count():
+                productstore = self.session.query(ProductStore).filter_by(ProductStore.product_id==product.id,
+                                                                          ProductStore.store_id==store.id).first()
+                productstore.store_url = storeData['url']
+                productstore.store_price = float(''.join(storeData['price'].split()[1:]).replace(',', ''))
+                productstore.store_shipping = storeData['shipping']
+                productstore.store_delivery = storeData['delivery']
+                productstore.store_cod = storeData['cod']
+                productstore.store_emi = storeData['emi']
+            else:
+                productstore = ProductStore(store_url=storeData['url'],
+                                            store_price=float(''.join(storeData['price'].split()[1:]).replace(',', '')),
+                                            store_shipping=storeData['shipping'],
+                                            store_delivery=storeData['delivery'],
+                                            store_cod = storeData['cod'],
+                                            store_emi = storeData['emi'])
+
+            productstore.store = store
+            productstore.product = product
+            self.session.add(productstore)
+            self.session.commit()
+
 
         # line = json.dumps(dict(item))+ "\n \n \n"
         # self.file.write(line)

@@ -14,14 +14,14 @@ Base = declarative_base()
 #                 Column("store_url",String(200),ForeignKey("store.id"))
 #                 )
 class Product(Base):
-    __tablename__ = "products"
+    __tablename__ = "product"
 
-    id = Column(String(1000), primary_key = True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     product_name = Column(String(2000))
-    product_category = Column(String(2000))
-    product_url = Column(String(2000))
+    product_url = Column(String(2000), primary_key=True)
     product_specs = Column(String(2000))
     stores = relationship("ProductStore", back_populates="product")
+
     def __repr__(self):
         return "<Product(Id='%s', productName='%s')>" % (
                              self.id, self.product_name)
@@ -29,24 +29,26 @@ class Product(Base):
 class Store(Base):
     __tablename__ = "store"
 
-    id = Column(String(1000), primary_key = True)
-    store_product_id = Column(String(2000),nullable= True)
-    store_price = Column(Integer)
-    product_shipping = Column(String(2000))
-    product_delivery = Column(String(2000))
-    product_cod = Column(String(2000))
-    product_emi = Column(String(2000))
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(1000), primary_key=True)
+    products = relationship("ProductStore", back_populates="store")
 
-    product = relationship("ProductStore", back_populates="store")
     def __repr__(self):
-        return "<Store(StoreUrl='%s', StorePrice='%s')>" % (
-                             self.id, self.store_price)
+        return "<Store(StoreId='%s', StoreName='%s')>" % (
+                             self.id, self.name)
 
 class ProductStore(Base):
     __tablename__ = "productstore"
-    product_id = Column(String(1000),ForeignKey("products.id"),primary_key=True)
-    store_id = Column(String(1000), ForeignKey("store.id"),primary_key = True)
-    store = relationship("Store", back_populates="product")
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    product_id = Column(Integer,ForeignKey("product.id"),primary_key=True)
+    store_id = Column(Integer, ForeignKey("store.id"),primary_key = True)
+    store_shipping = Column(String(2000))
+    store_delivery = Column(String(2000))
+    store_cod = Column(String(2000))
+    store_emi = Column(String(2000))
+    store_url = Column(String(2000))
+    store_price = Column(Integer)
+    store = relationship("Store", back_populates="products")
     product = relationship("Product", back_populates="stores")
 
 Base.metadata.create_all(engine)

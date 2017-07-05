@@ -53,7 +53,7 @@ class PricesSpider(CrawlSpider):
             try:
                 url = response.xpath("//div[@id='stores-blk']/div[@class='ng-scope'][{}]//div[@class='shpdvfive']//a/@href".format(i+1)).extract()[0]
                 query = urlparse.parse_qs(urlparse.urlsplit(url).query)
-                product['stores'][stores[i]]['url'] = query['product_url']
+                product['stores'][stores[i]]['url'] = query['product_url'][0]
             except:
                 product['stores'][stores[i]]['url'] = None
 
